@@ -14,6 +14,9 @@ import { loadControllers, scopePerRequest } from "awilix-koa";
 import ErrorHandler from "@middlewares/ErrorHandler";
 import { configure, getLogger } from "log4js";
 
+// 处理真假路由
+import { historyApiFallback } from "koa2-connect-history-api-fallback";
+
 /**
  * 处理日志:
  * 注意： 如果使用得是 SWC、serverless部署得话，服务不允许我们在logs文件夹下生成对应得日志，
@@ -76,9 +79,11 @@ app.use(scopePerRequest(container));
 
 // 判断路由是否正确，进行容错处理, 将 koa-app实例、错误日志传入进去。
 ErrorHandler.error(app, logger);
+app.use(historyApiFallback({ index: "/", whiteList: ["/api"] }));
 
 // 让所有得路由生效
 app.use(loadControllers(`${__dirname}/routers/*.ts`));
+
 if (process.env.NODE_ENV === "development") {
   app.listen(port, () => {
     console.log("ashu Server BFF启动成功");
