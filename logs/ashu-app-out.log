@@ -1,0 +1,18 @@
+2025-02-27 22:26:41: ashu Server BFF启动成功
+2025-02-27 22:27:13: 橘子 <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ashu_dev</title>
+    <link rel="icon" href="/favicon.ico" />
+    <script defer="defer" src="/scripts/runtime.39d74.bundule.js"></script>
+    <script defer="defer" src="/scripts/main.35f36.bundule.js"></script>
+    <link href="/styles/main.ae37b.css" rel="stylesheet" />
+  </head>
+  <body>
+    你好----服务端数据
+    <div id="app"></div>
+  </body>
+</html>
+
