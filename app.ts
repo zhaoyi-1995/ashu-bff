@@ -79,3 +79,9 @@ ErrorHandler.error(app, logger);
 
 // 让所有得路由生效
 app.use(loadControllers(`${__dirname}/routers/*.ts`));
+if (process.env.NODE_ENV === "development") {
+  app.listen(port, () => {
+    console.log("ashu Server BFF启动成功");
+  });
+}
+export default app;

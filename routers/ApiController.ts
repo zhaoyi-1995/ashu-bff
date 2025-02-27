@@ -7,9 +7,9 @@ class ApiController {
   constructor({ apiService }: { apiService: IApi }) {
     this.apiService = apiService;
   }
-  @route("list")
+  @route("/list")
   @GET()
-  async actionList(ctx: Router.IRouterContext, next: () => Promise<any>): Promise<void> {
+  async actionList(ctx: Router.IRouterContext, next: () => Promise<any>): Promise<any> {
     const data = await this.apiService.getInfo();
     ctx.body = { data };
   }
