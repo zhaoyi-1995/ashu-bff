@@ -1,0 +1,85 @@
+# 指定 AWS CloudFormation 模板的格式版本
+AWSTemplateFormatVersion: '2010-09-09'
+
+# 表示这是一个 AWS Serverless Application Model (SAM) 模板，用于无服务器应用
+Transform: AWS::Serverless-2016-10-31
+
+# 全局配置，适用于所有函数和 API 的默认设置
+Globals:
+  Function:
+    Timeout: 30              # 所有函数的默认超时时间为 30 秒
+    MemorySize: 1024         # 所有函数的默认内存大小为 1024 MB
+    Runtime: nodejs20.x      # 所有函数的默认运行时为 Node.js 20.x
+    Architectures: ['arm64'] # 所有函数的默认架构为 ARM64（Graviton 处理器）
+    Environment:
+      Variables:
+        NODE_OPTIONS: '--enable-source-maps' # 设置 Node.js 环境变量，启用源映射以便调试
+    EphemeralStorage:
+      Size: 512              # 所有函数的默认临时存储大小为 512 MB
+  Api:
+    OpenApiVersion: '2.0'    # API Gateway 使用 OpenAPI 2.0 规范
+    Cors:                    # 配置跨源资源共享 (CORS)
+      AllowMethods: "'*'"    # 允许所有 HTTP 方法（GET、POST 等）
+      AllowHeaders: "'Content-Type,Authorization'" # 允许的请求头
+      AllowOrigin: "'*'"     # 允许所有来源（通配符）
+      MaxAge: 600            # CORS 预检请求的缓存时间为 600 秒
+
+# 定义具体的资源
+Resources:
+  # 定义一个 Lambda Layer，用于存储依赖（如 node_modules）
+  NodeModulesLayer:
+    Type: AWS::Serverless::LayerVersion       # 资源类型为 Lambda Layer
+    Properties:
+      LayerName: nest-dependencies            # Layer 的名称
+      Description: Node modules for Nest.js application # Layer 的描述
+      ContentUri: layer/                      # Layer 内容的本地路径（通常是 node_modules）
+      CompatibleRuntimes:                     # 支持的运行时
+        - nodejs20.x
+      RetentionPolicy: Retain                 # Layer 在删除时保留，不自动删除
+
+  # 定义一个 API Gateway
+  Api:
+    Type: AWS::Serverless::Api                # 资源类型为无服务器 API
+    Properties:
+      StageName: dev                          # API 的阶段名称为 "dev"
+      BinaryMediaTypes:                       # 支持的二进制媒体类型
+        - 'image/*'                           # 支持所有图片类型
+        - 'multipart/form-data'               # 支持文件上传（如表单数据）
+      Auth:
+        DefaultAuthorizer: NONE               # 默认无认证（不强制要求 Authorizer）
+
+  # 定义一个 Lambda 函数，用于运行 Nest.js 应用
+  NestjsFunction:
+    Type: AWS::Serverless::Function           # 资源类型为无服务器函数
+    Metadata:
+      SkipBuild: true                         # 跳过 SAM 的自动构建过程（假设代码已构建）
+    Properties:
+      Handler: lambda.handler                 # 函数的入口点（lambda.js 中的 handler 函数）
+      CodeUri: ./dist                         # 函数代码的本地路径（构建后的 dist 文件夹）
+      MemorySize: 3008                        # 函数的内存大小为 3008 MB（覆盖全局设置）
+      Timeout: 30                             # 函数超时时间为 30 秒（与全局一致）
+      Layers:
+        - !Ref NodeModulesLayer               # 引用上面定义的 Layer（依赖）
+      Policies:                               # IAM 权限策略
+        - S3CrudPolicy:                       # S3 的 CRUD 操作权限
+            BucketName: aladdinagi-assets     # 针对特定 S3 存储桶
+        - VPCAccessPolicy: {}                 # 允许 VPC 访问（如果函数需要连接 VPC）
+      Events:
+        ApiEvent:                             # 定义触发事件
+          Type: Api                           # 事件类型为 API Gateway
+          Properties:
+            Path: /{proxy+}                   # 代理所有路径（动态路由）
+            Method: ANY                       # 支持所有 HTTP 方法
+            RestApiId: !Ref Api               # 关联上面定义的 API Gateway
+            Auth:
+              Authorizer: NONE                # 该路径无认证
+      AutoPublishAlias: live                  # 自动发布一个别名 "live"，便于版本管理
+
+# 输出值，便于部署后查看关键信息
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL     # 输出描述
+    Value: !Sub 'https://${Api}.execute-api.${AWS::Region}.amazonaws.com/dev' # API 的 URL
+  FunctionArn:
+    Description: Lambda Function ARN          # 输出描述
+    Value: !GetAtt NestjsFunction.Arn         # Lambda 函数的 ARN（Amazon Resource Name）

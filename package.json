@@ -22,7 +22,8 @@
     "log4js": "^6.9.1",
     "module-alias": "^2.2.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "serverless-http": "^3.2.0"
   },
   "devDependencies": {
     "@types/co": "^4.6.6",
